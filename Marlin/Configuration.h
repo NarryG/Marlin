@@ -65,26 +65,6 @@
 #define STRING_CONFIG_H_AUTHOR "(thisiskeithb, Ender-3 Pro)" // Who made the changes.
 //#define CUSTOM_VERSION_FILE Version.h // Path from the root directory (no quotes)
 
-/**
- * *** VENDORS PLEASE READ ***
- *
- * Marlin allows you to add a custom boot image for Graphical LCDs.
- * With this option Marlin will first show your custom screen followed
- * by the standard Marlin logo with version number and web URL.
- *
- * We encourage you to take advantage of this new feature and we also
- * respectfully request that you retain the unmodified Marlin boot screen.
- */
-
-// Show the Marlin bootscreen on startup. ** ENABLE FOR PRODUCTION **
-#define SHOW_BOOTSCREEN
-
-// Show the bitmap in Marlin/_Bootscreen.h on startup.
-#define SHOW_CUSTOM_BOOTSCREEN
-
-// Show the bitmap in Marlin/_Statusscreen.h on the status screen.
-#define CUSTOM_STATUS_SCREEN_IMAGE
-
 // @section machine
 
 // Choose the name from boards.h that matches your setup
@@ -1167,26 +1147,29 @@
   //#define ENDSTOPPULLDOWN_ZMIN_PROBE
 #endif
 
-// Mechanical endstop with COM to ground and NC to Signal uses "false" here (most common setup).
-#define X_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define Y_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define Z_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define I_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define J_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define K_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define U_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define V_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define W_MIN_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define X_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define Y_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define Z_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define I_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define J_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define K_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define U_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define V_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define W_MAX_ENDSTOP_INVERTING false // Set to true to invert the logic of the endstop.
-#define Z_MIN_PROBE_ENDSTOP_INVERTING false // Set to true to invert the logic of the probe.
+/**
+ * Endstop "Hit" State
+ * Set to the state (HIGH or LOW) that applies to each endstop.
+ */
+#define X_MIN_ENDSTOP_HIT_STATE HIGH
+#define X_MAX_ENDSTOP_HIT_STATE HIGH
+#define Y_MIN_ENDSTOP_HIT_STATE HIGH
+#define Y_MAX_ENDSTOP_HIT_STATE HIGH
+#define Z_MIN_ENDSTOP_HIT_STATE HIGH
+#define Z_MAX_ENDSTOP_HIT_STATE HIGH
+#define I_MIN_ENDSTOP_HIT_STATE HIGH
+#define I_MAX_ENDSTOP_HIT_STATE HIGH
+#define J_MIN_ENDSTOP_HIT_STATE HIGH
+#define J_MAX_ENDSTOP_HIT_STATE HIGH
+#define K_MIN_ENDSTOP_HIT_STATE HIGH
+#define K_MAX_ENDSTOP_HIT_STATE HIGH
+#define U_MIN_ENDSTOP_HIT_STATE HIGH
+#define U_MAX_ENDSTOP_HIT_STATE HIGH
+#define V_MIN_ENDSTOP_HIT_STATE HIGH
+#define V_MAX_ENDSTOP_HIT_STATE HIGH
+#define W_MIN_ENDSTOP_HIT_STATE HIGH
+#define W_MAX_ENDSTOP_HIT_STATE HIGH
+#define Z_MIN_PROBE_ENDSTOP_HIT_STATE HIGH
 
 // Enable this feature if all enabled endstop pins are interrupt-capable.
 // This will remove the need to poll the interrupt pins, saving many CPU cycles.
@@ -1682,7 +1665,7 @@
 //#define PREHEAT_BEFORE_PROBING
 #if ENABLED(PREHEAT_BEFORE_PROBING)
   #define PROBING_NOZZLE_TEMP 120   // (°C) Only applies to E0 at this time
-  #define PROBING_BED_TEMP     60
+  #define PROBING_BED_TEMP     50
 #endif
 
 // For Inverting Stepper Enable Pins (Active Low) use 0, Non Inverting (Active High) use 1
@@ -1715,8 +1698,8 @@
 
 // @section extruder
 
-//#define DISABLE_E                 // Disable the extruder when not stepping
-#define DISABLE_INACTIVE_EXTRUDER   // Keep only the active extruder enabled
+//#define DISABLE_E               // Disable the extruder when not stepping
+#define DISABLE_OTHER_EXTRUDERS   // Keep only the active extruder enabled
 
 // @section motion
 
@@ -1911,6 +1894,47 @@
     // as the filament moves. (Be sure to set FILAMENT_RUNOUT_DISTANCE_MM
     // large enough to avoid false positives.)
     //#define FILAMENT_MOTION_SENSOR
+
+    #if ENABLED(FILAMENT_MOTION_SENSOR)
+      //#define FILAMENT_SWITCH_AND_MOTION
+      #if ENABLED(FILAMENT_SWITCH_AND_MOTION)
+        #define NUM_MOTION_SENSORS   1          // Number of sensors, up to one per extruder. Define a FIL_MOTION#_PIN for each.
+        //#define FIL_MOTION1_PIN    -1
+
+        // Override individually if the motion sensors vary
+        //#define FIL_MOTION1_STATE LOW
+        //#define FIL_MOTION1_PULLUP
+        //#define FIL_MOTION1_PULLDOWN
+
+        //#define FIL_MOTION2_STATE LOW
+        //#define FIL_MOTION2_PULLUP
+        //#define FIL_MOTION2_PULLDOWN
+
+        //#define FIL_MOTION3_STATE LOW
+        //#define FIL_MOTION3_PULLUP
+        //#define FIL_MOTION3_PULLDOWN
+
+        //#define FIL_MOTION4_STATE LOW
+        //#define FIL_MOTION4_PULLUP
+        //#define FIL_MOTION4_PULLDOWN
+
+        //#define FIL_MOTION5_STATE LOW
+        //#define FIL_MOTION5_PULLUP
+        //#define FIL_MOTION5_PULLDOWN
+
+        //#define FIL_MOTION6_STATE LOW
+        //#define FIL_MOTION6_PULLUP
+        //#define FIL_MOTION6_PULLDOWN
+
+        //#define FIL_MOTION7_STATE LOW
+        //#define FIL_MOTION7_PULLUP
+        //#define FIL_MOTION7_PULLDOWN
+
+        //#define FIL_MOTION8_STATE LOW
+        //#define FIL_MOTION8_PULLUP
+        //#define FIL_MOTION8_PULLDOWN
+      #endif
+    #endif
   #endif
 #endif
 
@@ -1969,10 +1993,10 @@
 /**
  * Auto-leveling needs preheating
  */
-#define PREHEAT_BEFORE_LEVELING
+//#define PREHEAT_BEFORE_LEVELING
 #if ENABLED(PREHEAT_BEFORE_LEVELING)
   #define LEVELING_NOZZLE_TEMP 120   // (°C) Only applies to E0 at this time
-  #define LEVELING_BED_TEMP     60
+  #define LEVELING_BED_TEMP     50
 #endif
 
 /**
@@ -2040,7 +2064,7 @@
 #if EITHER(AUTO_BED_LEVELING_LINEAR, AUTO_BED_LEVELING_BILINEAR)
 
   // Set the number of grid points per dimension.
-  #define GRID_MAX_POINTS_X 4
+  #define GRID_MAX_POINTS_X 5
   #define GRID_MAX_POINTS_Y GRID_MAX_POINTS_X
 
   // Probe along the Y axis, advancing X after each column
@@ -3084,6 +3108,8 @@
  *  - Download files as specified for your type of display.
  *  - Plug the microSD card into the back of the display.
  *  - Boot the display and wait for the update to complete.
+ *
+ * :[ 'ORIGIN', 'FYSETC', 'HYPRECY', 'MKS', 'RELOADED', 'IA_CREALITY' ]
  */
 //#define DGUS_LCD_UI ORIGIN
 #if DGUS_UI_IS(MKS)
@@ -3105,14 +3131,22 @@
 //#define TOUCH_UI_FTDI_EVE
 
 //
-// Touch-screen LCD for Anycubic printers
+// Touch-screen LCD for Anycubic Chiron
+//
+//#define ANYCUBIC_LCD_CHIRON
+
+//
+// Touch-screen LCD for Anycubic i3 Mega
 //
 //#define ANYCUBIC_LCD_I3MEGA
-//#define ANYCUBIC_LCD_CHIRON
-#if EITHER(ANYCUBIC_LCD_I3MEGA, ANYCUBIC_LCD_CHIRON)
-  //#define ANYCUBIC_LCD_DEBUG
+#if ENABLED(ANYCUBIC_LCD_I3MEGA)
   //#define ANYCUBIC_LCD_GCODE_EXT  // Add ".gcode" to menu entries for DGUS clone compatibility
 #endif
+
+//
+// Touch-screen LCD for Anycubic Vyper
+//
+//#define ANYCUBIC_LCD_VYPER
 
 //
 // 320x240 Nextion 2.8" serial TFT Resistive Touch Screen NX3224T028
@@ -3263,11 +3297,11 @@
    */
   #define TFT_FONT  NOTOSANS
 
-  //#define TFT_SHARED_SPI   // SPI is shared between TFT display and other devices. Disable async data transfer
+  //#define TFT_SHARED_IO   // I/O is shared between TFT display and other devices. Disable async data transfer.
 #endif
 
 #if ENABLED(TFT_LVGL_UI)
-  //#define MKS_WIFI_MODULE  // MKS WiFi module
+  //#define MKS_WIFI_MODULE // MKS WiFi module
 #endif
 
 /**

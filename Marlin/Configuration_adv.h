@@ -196,8 +196,6 @@
  */
 //#define HEPHESTOS2_HEATED_BED_KIT
 #if ENABLED(HEPHESTOS2_HEATED_BED_KIT)
-  #undef TEMP_SENSOR_BED
-  #define TEMP_SENSOR_BED 70
   #define HEATER_BED_INVERTING true
 #endif
 
@@ -390,7 +388,7 @@
    *
    * A very stable heater might produce a false positive and halt the printer. In this case, try increasing
    * the corresponding THERMAL_PROTECTION_*_PERIOD constant a bit. Keep in mind that uncontrolled heating
-   * shouldn't be allowed to persist for more than a minite or two.
+   * shouldn't be allowed to persist for more than a minute or two.
    *
    * Be careful to distinguish false positives from real sensor issues before disabling this feature. If the
    * heater's temperature appears even slightly higher than expected after restarting, you may have a real
@@ -993,7 +991,7 @@
 
 #endif // BLTOUCH
 
-// @section extras
+// @section calibration
 
 /**
  * Z Steppers Auto-Alignment
@@ -1090,7 +1088,51 @@
 
 #endif
 
-// @section motion
+// @section motion control
+
+/**
+ * Fixed-time-based Motion Control -- EXPERIMENTAL
+ * Enable/disable and set parameters with G-code M493.
+ */
+//#define FT_MOTION
+#if ENABLED(FT_MOTION)
+  #define FTM_DEFAULT_MODE         ftMotionMode_ENABLED // Default mode of fixed time control. (Enums in ft_types.h)
+  #define FTM_DEFAULT_DYNFREQ_MODE dynFreqMode_DISABLED // Default mode of dynamic frequency calculation. (Enums in ft_types.h)
+  #define FTM_SHAPING_DEFAULT_X_FREQ 37.0f              // (Hz) Default peak frequency used by input shapers.
+  #define FTM_SHAPING_DEFAULT_Y_FREQ 37.0f              // (Hz) Default peak frequency used by input shapers.
+  #define FTM_LINEAR_ADV_DEFAULT_ENA false              // Default linear advance enable (true) or disable (false).
+  #define FTM_LINEAR_ADV_DEFAULT_K    0.0f              // Default linear advance gain.
+  #define FTM_SHAPING_ZETA            0.1f              // Zeta used by input shapers.
+  #define FTM_SHAPING_V_TOL           0.05f             // Vibration tolerance used by EI input shapers.
+
+  /**
+   * Advanced configuration
+   */
+  #define FTM_BATCH_SIZE 100                            // Batch size for trajectory generation;
+                                                        // half the window size for Ulendo FBS.
+  #define FTM_FS           1000                         // (Hz) Frequency for trajectory generation. (1 / FTM_TS)
+  #define FTM_TS              0.001f                    // (s) Time step for trajectory generation. (1 / FTM_FS)
+  #define FTM_STEPPER_FS  20000                         // (Hz) Frequency for stepper I/O update.
+  #define FTM_MIN_TICKS ((STEPPER_TIMER_RATE) / (FTM_STEPPER_FS)) // Minimum stepper ticks between steps.
+  #define FTM_MIN_SHAPE_FREQ 10                         // Minimum shaping frequency.
+  #define FTM_ZMAX          100                         // Maximum delays for shaping functions (even numbers only!).
+                                                        // Calculate as:
+                                                        //    1/2 * (FTM_FS / FTM_MIN_SHAPE_FREQ) for ZV.
+                                                        //    (FTM_FS / FTM_MIN_SHAPE_FREQ) for ZVD, MZV.
+                                                        //    3/2 * (FTM_FS / FTM_MIN_SHAPE_FREQ) for 2HEI.
+                                                        //    2 * (FTM_FS / FTM_MIN_SHAPE_FREQ) for 3HEI.
+  #define FTM_STEPS_PER_UNIT_TIME 20                    // Interpolated stepper commands per unit time.
+                                                        // Calculate as (FTM_STEPPER_FS / FTM_FS).
+  #define FTM_CTS_COMPARE_VAL 10                        // Comparison value used in interpolation algorithm.
+                                                        // Calculate as (FTM_STEPS_PER_UNIT_TIME / 2).
+  // These values may be configured to adjust duration of loop().
+  #define FTM_STEPS_PER_LOOP 60                         // Number of stepper commands to generate each loop().
+  #define FTM_POINTS_PER_LOOP 100                       // Number of trajectory points to generate each loop().
+
+  // This value may be configured to adjust duration to consume the command buffer.
+  // Try increasing this value if stepper motion is not smooth.
+  #define FTM_STEPPERCMD_BUFF_SIZE 1000                 // Size of the stepper command buffers.
+#endif
 
 /**
  * Input Shaping -- EXPERIMENTAL
@@ -1129,6 +1171,8 @@
   //#define SHAPING_MENU                // Add a menu to the LCD to set shaping parameters.
 #endif
 
+// @section motion
+
 #define AXIS_RELATIVE_MODES { false, false, false, false }
 
 // Add a Duplicate option for well-separated conjoined nozzles
@@ -1148,19 +1192,20 @@
 
 /**
  * Idle Stepper Shutdown
- * Enable DISABLE_INACTIVE_* to shut down axis steppers after an idle period.
- * The Deactive Time can be overridden with M18 and M84. Set to 0 for No Timeout.
+ * Enable DISABLE_IDLE_* to shut down axis steppers after an idle period.
+ * The default timeout duration can be overridden with M18 and M84. Set to 0 for No Timeout.
  */
-#define DEFAULT_STEPPER_DEACTIVE_TIME 120
-#define DISABLE_INACTIVE_X
-#define DISABLE_INACTIVE_Y
-#define DISABLE_INACTIVE_Z  // Disable if the nozzle could fall onto your printed part!
-//#define DISABLE_INACTIVE_I
-//#define DISABLE_INACTIVE_J
-//#define DISABLE_INACTIVE_K
-//#define DISABLE_INACTIVE_U
-//#define DISABLE_INACTIVE_V
-//#define DISABLE_INACTIVE_W
+#define DEFAULT_STEPPER_TIMEOUT_SEC 120
+#define DISABLE_IDLE_X
+#define DISABLE_IDLE_Y
+#define DISABLE_IDLE_Z    // Disable if the nozzle could fall onto your printed part!
+//#define DISABLE_IDLE_I
+//#define DISABLE_IDLE_J
+//#define DISABLE_IDLE_K
+//#define DISABLE_IDLE_U
+//#define DISABLE_IDLE_V
+//#define DISABLE_IDLE_W
+#define DISABLE_IDLE_E    // Shut down all idle extruders
 
 // Default Minimum Feedrates for printing and travel moves
 #define DEFAULT_MINIMUMFEEDRATE             0.0     // (mm/s) Minimum feedrate. Set with M205 S.
@@ -1469,18 +1514,35 @@
 #endif // HAS_MARLINUI_MENU
 
 #if HAS_DISPLAY
+  /**
+   * *** VENDORS PLEASE READ ***
+   *
+   * Marlin allows you to add a custom boot image for Graphical LCDs.
+   * With this option Marlin will first show your custom screen followed
+   * by the standard Marlin logo with version number and web URL.
+   *
+   * We encourage you to take advantage of this new feature and we also
+   * respectfully request that you retain the unmodified Marlin boot screen.
+   */
+  #if ANY(HAS_MARLINUI_U8GLIB, TOUCH_UI_FTDI_EVE, IS_DWIN_MARLINUI)
+    #define SHOW_BOOTSCREEN                 // Show the Marlin bootscreen on startup. ** ENABLE FOR PRODUCTION **
+    #if ENABLED(SHOW_BOOTSCREEN)
+      #define BOOTSCREEN_TIMEOUT 4000       // (ms) Total Duration to display the boot screen(s)
+      #if EITHER(HAS_MARLINUI_U8GLIB, TFT_COLOR_UI)
+        #define BOOT_MARLIN_LOGO_SMALL      // Show a smaller Marlin logo on the Boot Screen (saving lots of flash)
+      #endif
+      #define SHOW_CUSTOM_BOOTSCREEN        // Show the bitmap in Marlin/_Bootscreen.h on startup.
+    #endif
+    #if HAS_MARLINUI_U8GLIB
+      #define CUSTOM_STATUS_SCREEN_IMAGE    // Show the bitmap in Marlin/_Statusscreen.h on the status screen.
+    #endif
+  #endif
+
   //#define SOUND_MENU_ITEM   // Add a mute option to the LCD menu
   #define SOUND_ON_DEFAULT    // Buzzer/speaker default enabled state
 
   // The timeout to return to the status screen from sub-menus
   //#define LCD_TIMEOUT_TO_STATUS 15000   // (ms)
-
-  #if ENABLED(SHOW_BOOTSCREEN)
-    #define BOOTSCREEN_TIMEOUT 2000       // (ms) Total Duration to display the boot screen(s)
-    #if EITHER(HAS_MARLINUI_U8GLIB, TFT_COLOR_UI)
-      #define BOOT_MARLIN_LOGO_SMALL      // Show a smaller Marlin logo on the Boot Screen (saving lots of flash)
-    #endif
-  #endif
 
   // Scroll a longer status message into view
   #define STATUS_MESSAGE_SCROLLING
@@ -1972,7 +2034,7 @@
 //
 // Specify additional languages for the UI. Default specified by LCD_LANGUAGE.
 //
-#if ANY(DOGLCD, TFT_COLOR_UI, TOUCH_UI_FTDI_EVE, IS_DWIN_MARLINUI)
+#if ANY(DOGLCD, TFT_COLOR_UI, TOUCH_UI_FTDI_EVE, IS_DWIN_MARLINUI, ANYCUBIC_LCD_VYPER)
   //#define LCD_LANGUAGE_2 fr
   //#define LCD_LANGUAGE_3 de
   //#define LCD_LANGUAGE_4 es
@@ -2737,10 +2799,10 @@
   //#define FILAMENT_CHANGE_RESUME_ON_INSERT      // Automatically continue / load filament when runout sensor is triggered again.
   //#define PAUSE_REHEAT_FAST_RESUME              // Reduce number of waits by not prompting again post-timeout before continuing.
 
-  #define PARK_HEAD_ON_PAUSE                    // Park the nozzle during pause and filament change.
-  #define HOME_BEFORE_FILAMENT_CHANGE           // If needed, home before parking for filament change
+  #define PARK_HEAD_ON_PAUSE                      // Park the nozzle during pause and filament change.
+  #define HOME_BEFORE_FILAMENT_CHANGE             // If needed, home before parking for filament change
 
-  #define FILAMENT_LOAD_UNLOAD_GCODES           // Add M701/M702 Load/Unload G-codes, plus Load/Unload in the LCD Prepare menu.
+  #define FILAMENT_LOAD_UNLOAD_GCODES             // Add M701/M702 Load/Unload G-codes, plus Load/Unload in the LCD Prepare menu.
   //#define FILAMENT_UNLOAD_ALL_EXTRUDERS         // Allow M702 to unload all extruders above a minimum target temp (as set by M302)
 #endif
 
@@ -2998,28 +3060,28 @@
    * Override default SPI pins for TMC2130, TMC2160, TMC2660, TMC5130 and TMC5160 drivers here.
    * The default pins can be found in your board's pins file.
    */
-  //#define X_CS_PIN          -1
-  //#define Y_CS_PIN          -1
-  //#define Z_CS_PIN          -1
-  //#define X2_CS_PIN         -1
-  //#define Y2_CS_PIN         -1
-  //#define Z2_CS_PIN         -1
-  //#define Z3_CS_PIN         -1
-  //#define Z4_CS_PIN         -1
-  //#define I_CS_PIN          -1
-  //#define J_CS_PIN          -1
-  //#define K_CS_PIN          -1
-  //#define U_CS_PIN          -1
-  //#define V_CS_PIN          -1
-  //#define W_CS_PIN          -1
-  //#define E0_CS_PIN         -1
-  //#define E1_CS_PIN         -1
-  //#define E2_CS_PIN         -1
-  //#define E3_CS_PIN         -1
-  //#define E4_CS_PIN         -1
-  //#define E5_CS_PIN         -1
-  //#define E6_CS_PIN         -1
-  //#define E7_CS_PIN         -1
+  //#define X_CS_PIN      -1
+  //#define Y_CS_PIN      -1
+  //#define Z_CS_PIN      -1
+  //#define X2_CS_PIN     -1
+  //#define Y2_CS_PIN     -1
+  //#define Z2_CS_PIN     -1
+  //#define Z3_CS_PIN     -1
+  //#define Z4_CS_PIN     -1
+  //#define I_CS_PIN      -1
+  //#define J_CS_PIN      -1
+  //#define K_CS_PIN      -1
+  //#define U_CS_PIN      -1
+  //#define V_CS_PIN      -1
+  //#define W_CS_PIN      -1
+  //#define E0_CS_PIN     -1
+  //#define E1_CS_PIN     -1
+  //#define E2_CS_PIN     -1
+  //#define E3_CS_PIN     -1
+  //#define E4_CS_PIN     -1
+  //#define E5_CS_PIN     -1
+  //#define E6_CS_PIN     -1
+  //#define E7_CS_PIN     -1
 
   /**
    * Software option for SPI driven drivers (TMC2130, TMC2160, TMC2660, TMC5130 and TMC5160).
@@ -3027,9 +3089,9 @@
    * but you can override or define them here.
    */
   //#define TMC_USE_SW_SPI
-  //#define TMC_SW_MOSI       -1
-  //#define TMC_SW_MISO       -1
-  //#define TMC_SW_SCK        -1
+  //#define TMC_SPI_MOSI  -1
+  //#define TMC_SPI_MISO  -1
+  //#define TMC_SPI_SCK   -1
 
   // @section tmc/serial
 
@@ -3728,11 +3790,11 @@
 // @section reporting
 
 // Extra options for the M114 "Current Position" report
-#define M114_DETAIL         // Use 'M114` for details to check planner calculations
+#define M114_DETAIL           // Use 'M114` for details to check planner calculations
 //#define M114_REALTIME       // Real current position based on forward kinematics
 //#define M114_LEGACY         // M114 used to synchronize on every call. Enable if needed.
 
-#define REPORT_FAN_CHANGE   // Report the new fan speed when changed by M106 (and others)
+#define REPORT_FAN_CHANGE     // Report the new fan speed when changed by M106 (and others)
 
 // @section gcode
 
