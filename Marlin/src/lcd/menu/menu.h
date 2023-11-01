@@ -76,7 +76,7 @@ class MenuItemBase {
 // STATIC_ITEM(LABEL,...)
 class MenuItem_static : public MenuItemBase {
   public:
-    static void draw(const uint8_t row, FSTR_P const fstr, const uint8_t style=SS_DEFAULT, const char *vstr=nullptr);
+    static void draw(const uint8_t row, FSTR_P const ftpl, const uint8_t style=SS_DEFAULT, const char *vstr=nullptr);
 };
 
 // BACK_ITEM(LABEL)
@@ -102,31 +102,31 @@ class MenuItem_confirm : public MenuItemBase {
       FSTR_P const yes,           // Right option label
       FSTR_P const no,            // Left option label
       const bool yesno,           // Is "yes" selected?
-      FSTR_P const pref,          // Prompt prefix
+      FSTR_P const fpre,          // Prompt prefix
       const char * const string,  // Prompt runtime string
-      FSTR_P const suff           // Prompt suffix
+      FSTR_P const fsuf           // Prompt suffix
     );
     static void select_screen(
       FSTR_P const yes, FSTR_P const no,
       selectFunc_t yesFunc, selectFunc_t noFunc,
-      FSTR_P const pref, const char * const string=nullptr, FSTR_P const suff=nullptr
+      FSTR_P const fpre, const char * const string=nullptr, FSTR_P const fsuf=nullptr
     );
     static void select_screen(
       FSTR_P const yes, FSTR_P const no,
       selectFunc_t yesFunc, selectFunc_t noFunc,
-      FSTR_P const pref, FSTR_P const fstr, FSTR_P const suff=nullptr
+      FSTR_P const fpre, FSTR_P const fstr, FSTR_P const fsuf=nullptr
     ) {
       #ifdef __AVR__
         char str[strlen_P(FTOP(fstr)) + 1];
         strcpy_P(str, FTOP(fstr));
-        select_screen(yes, no, yesFunc, noFunc, pref, str, suff);
+        select_screen(yes, no, yesFunc, noFunc, fpre, str, fsuf);
       #else
-        select_screen(yes, no, yesFunc, noFunc, pref, FTOP(fstr), suff);
+        select_screen(yes, no, yesFunc, noFunc, fpre, FTOP(fstr), fsuf);
       #endif
     }
     // Shortcut for prompt with "NO"/ "YES" labels
-    FORCE_INLINE static void confirm_screen(selectFunc_t yesFunc, selectFunc_t noFunc, FSTR_P const pref, const char * const string=nullptr, FSTR_P const suff=nullptr) {
-      select_screen(GET_TEXT_F(MSG_YES), GET_TEXT_F(MSG_NO), yesFunc, noFunc, pref, string, suff);
+    FORCE_INLINE static void confirm_screen(selectFunc_t yesFunc, selectFunc_t noFunc, FSTR_P const fpre, const char * const string=nullptr, FSTR_P const fsuf=nullptr) {
+      select_screen(GET_TEXT_F(MSG_YES), GET_TEXT_F(MSG_NO), yesFunc, noFunc, fpre, string, fsuf);
     }
 };
 
@@ -168,7 +168,7 @@ class MenuEditItemBase : public MenuItemBase {
       void * const ev,        // Edit value pointer
       const int32_t minv,     // Encoder minimum
       const int32_t maxv,     // Encoder maximum
-      const uint16_t ep,      // Initial encoder value
+      const uint32_t ep,      // Initial encoder value
       const screenFunc_t cs,  // MenuItem_type::draw_edit_screen => MenuEditItemBase::edit()
       const screenFunc_t cb,  // Callback after edit
       const bool le           // Flag to call cb() during editing
@@ -242,21 +242,14 @@ void _lcd_draw_homing();
   #else
     void lcd_babystep_z();
   #endif
-
-  #if ENABLED(BABYSTEP_MILLIMETER_UNITS)
-    #define BABYSTEP_SIZE_X int32_t((BABYSTEP_MULTIPLICATOR_XY) * planner.settings.axis_steps_per_mm[X_AXIS])
-    #define BABYSTEP_SIZE_Y int32_t((BABYSTEP_MULTIPLICATOR_XY) * planner.settings.axis_steps_per_mm[Y_AXIS])
-    #define BABYSTEP_SIZE_Z int32_t((BABYSTEP_MULTIPLICATOR_Z)  * planner.settings.axis_steps_per_mm[Z_AXIS])
-  #else
-    #define BABYSTEP_SIZE_X BABYSTEP_MULTIPLICATOR_XY
-    #define BABYSTEP_SIZE_Y BABYSTEP_MULTIPLICATOR_XY
-    #define BABYSTEP_SIZE_Z BABYSTEP_MULTIPLICATOR_Z
-  #endif
-
 #endif
 
 #if ENABLED(TOUCH_SCREEN_CALIBRATION)
   void touch_screen_calibration();
+#endif
+
+#if ENABLED(ONE_CLICK_PRINT)
+  void one_click_print();
 #endif
 
 extern uint8_t screen_history_depth;
